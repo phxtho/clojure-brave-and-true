@@ -34,7 +34,28 @@
          final-body-parts []]
     (if (empty? remaining-asym-parts)
       final-body-parts
+      ;; Associate part with the first value of remaining-asym-parts
       (let [[part & remaining] remaining-asym-parts]
         (recur remaining
                (into final-body-parts
+                     ;; Create a set as part and matching might be the same
                      (set [part (matching-part part)])))))))
+
+(defn better-symmetrize-body-parts
+  "Expects a seq of maps that have a :name and :size"
+  [asym-body-parts]
+  (reduce (fn [final-body-parts part]
+            (into final-body-parts (set [part (matching-part part)])))
+          []
+          asym-body-parts))
+
+(defn hit
+  [asym-body-parts]
+  (let [sym-parts (better-symmetrize-body-parts asym-body-parts)
+        body-part-size-sum (reduce + (map :size sym-parts))
+        target (rand body-part-size-sum)]
+     (loop [[part & remaining] sym-parts
+             accumulated-size (:size part)]
+        (if (> accumulated-size target)
+          part
+          (recur remaining (+ accumulated-size (:size (first remaining))))))))
